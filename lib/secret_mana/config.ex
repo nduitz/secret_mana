@@ -5,17 +5,27 @@ defmodule SecretMana.Config do
     Application.get_env(:secret_mana, :version, @latest_version)
   end
 
+  def local_install() do
+    Application.get_env(:secret_mana, :local_install, true)
+  end
+
   def bin_dir() do
-    name = "age-#{version()}"
-    Path.expand("_build/#{name}")
+    local_install()
+    |> if do
+      name = "age-#{version()}"
+
+      Path.expand("_build/#{name}/")
+    else
+      Application.fetch_env!(:secret_mana, :bin_dir)
+    end
   end
 
   def age_bin_path() do
-    Path.join([bin_dir(), "age", "age"])
+    Path.join([bin_dir(), "age"])
   end
 
   def age_keygen_bin_path() do
-    Path.join([bin_dir(), "age", "age-keygen"])
+    Path.join([bin_dir(), "age-keygen"])
   end
 
   def default_base_url do

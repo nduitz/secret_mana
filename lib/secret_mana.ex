@@ -12,8 +12,20 @@ defmodule SecretMana do
   SecretMana supports both JSON and YAML formats for secret files.
   """
 
+  use Application
   require Logger
   import SecretMana.Config
+
+  def start(_, _) do
+    unless local_install() do
+      Application.get_env(:secret_mana, :bin_dir) or
+        raise """
+        The `bin_dir` configuration is required when `local_install` is set to false.
+        """
+    end
+
+    Supervisor.start_link([], strategy: :one_for_one)
+  end
 
   @doc """
   Reads and decrypts secrets from the configured secret file.
@@ -171,20 +183,28 @@ defmodule SecretMana do
       SecretMana.install()
   """
   def install() do
-    bin_dir = bin_dir()
+    if local_install() do
+      File.mkdir_p!(bin_dir())
 
-    if File.exists?(bin_dir) do
-      Logger.info("age already installed")
+      File.ls!(bin_dir())
+      |> Enum.sort()
+      |> case do
+        [] ->
+          Logger.info("Installing age...")
+
+          base_url = default_base_url()
+          url = get_url(base_url)
+          body = fetch_body!(url)
+
+          extract_binaries(body)
+
+          Logger.info("Installation complete...")
+
+        ["age", "age-keygen"] ->
+          Logger.info("age already installed")
+      end
     else
-      Logger.info("Installing age...")
-
-      base_url = default_base_url()
-      url = get_url(base_url)
-      body = fetch_body!(url)
-
-      extract_binaries(body)
-
-      Logger.info("Installation complete...")
+      Logger.info("Local install disabled. age should be installed in `#{bin_dir()}`")
     end
   end
 
@@ -248,17 +268,30 @@ defmodule SecretMana do
   defp fallback(:inet6), do: :inet
 
   defp extract_binaries(body) do
+    {temp_dir, _} = System.cmd("mktemp", ["-d"])
+    temp_dir = String.trim(temp_dir)
+
     case target() do
       "windows-amd64.zip" ->
         Application.ensure_all_started(:erl_tar)
 
-        :zip.extract(body)
+        :zip.extract(body, cwd: temp_dir)
 
       _ ->
         Application.ensure_all_started(:erl_tar)
 
-        :erl_tar.extract({:binary, body}, [:compressed, cwd: bin_dir()])
+        :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
     end
+
+    File.mkdir_p!(bin_dir())
+
+    File.cp!(Path.join([temp_dir, "age", "age"]), age_bin_path())
+    File.cp!(Path.join([temp_dir, "age", "age-keygen"]), age_keygen_bin_path())
+
+    File.chmod(age_bin_path(), 0o755)
+    File.chmod(age_keygen_bin_path(), 0o755)
+
+    System.cmd("rm", ["-rf", temp_dir])
   end
 
   defp get_url(base_url) do

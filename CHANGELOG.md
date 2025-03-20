@@ -2,6 +2,10 @@
 
 # Changelog
 
+### v0.0.3 (2024-03-21)
+
+- Allow enabling/disabling local_install (helpful for deployments and CIs)
+
 ## v0.0.2 (2024-03-21)
 
 ### Fixes
