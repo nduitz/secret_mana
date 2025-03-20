@@ -2,7 +2,13 @@
 
 # Changelog
 
-## v0.1.0 (2024-03-21)
+## v0.0.2 (2024-03-21)
+
+### Fixes
+
+- Fix file type checking by skipping after editing.
+
+## v0.0.1 (2024-03-21)
 
 ### Features
 

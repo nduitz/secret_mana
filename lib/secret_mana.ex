@@ -68,7 +68,7 @@ defmodule SecretMana do
 
     run_editor(editor, temp_file)
 
-    encrypt(temp_file)
+    encrypt(temp_file, false)
     File.rm!(temp_file)
   end
 
@@ -101,7 +101,7 @@ defmodule SecretMana do
   ## Examples
       SecretMana.encrypt("secrets.json")
   """
-  def encrypt(file) do
+  def encrypt(file, check_file_type \\ true) do
     File.exists?(pub_key_file()) or
       raise """
       Public key not found, please generate secret key first or define path.
@@ -109,6 +109,21 @@ defmodule SecretMana do
       Usage: mix age.gen.key
       """
 
+    if check_file_type, do: check_file_type(file)
+
+    System.cmd(
+      age_bin_path(),
+      [
+        "-o",
+        secret_file(),
+        "-R",
+        pub_key_file(),
+        file
+      ]
+    )
+  end
+
+  defp check_file_type(file) do
     file_ext = Path.extname(file)
 
     cond do
@@ -129,17 +144,6 @@ defmodule SecretMana do
         extension: #{file_ext}
         """
     end
-
-    System.cmd(
-      age_bin_path(),
-      [
-        "-o",
-        secret_file(),
-        "-R",
-        pub_key_file(),
-        file
-      ]
-    )
   end
 
   @doc """
