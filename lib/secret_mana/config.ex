@@ -37,11 +37,12 @@ defmodule SecretMana.Config do
   end
 
   def default_base_path() do
-    Path.expand("config/")
+    "config/"
   end
 
   def base_path() do
     Application.get_env(:secret_mana, :base_path, default_base_path())
+    |> Path.expand()
   end
 
   def default_key_file() do
