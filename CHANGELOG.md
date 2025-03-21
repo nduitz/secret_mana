@@ -2,6 +2,10 @@
 
 # Changelog
 
+### v0.0.4 (2024-03-22)
+
+- Fix pathes by using otp app path.
+
 ### v0.0.3 (2024-03-21)
 
 - Allow enabling/disabling local_install (helpful for deployments and CIs)

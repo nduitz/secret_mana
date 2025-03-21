@@ -24,6 +24,11 @@ defmodule SecretMana do
         """
     end
 
+    otp_app() or
+      raise """
+      The `otp_app` configuration is required.
+      """
+
     Supervisor.start_link([], strategy: :one_for_one)
   end
 

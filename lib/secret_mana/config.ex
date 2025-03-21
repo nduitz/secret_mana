@@ -1,6 +1,10 @@
 defmodule SecretMana.Config do
   @latest_version "1.2.1"
 
+  def otp_app() do
+    Application.fetch_env!(:secret_mana, :otp_app)
+  end
+
   def version() do
     Application.get_env(:secret_mana, :version, @latest_version)
   end
@@ -14,7 +18,7 @@ defmodule SecretMana.Config do
     |> if do
       name = "age-#{version()}"
 
-      Path.expand("_build/#{name}/")
+      Application.app_dir(otp_app(), "_build/#{name}/")
     else
       Application.fetch_env!(:secret_mana, :bin_dir)
     end
@@ -41,8 +45,10 @@ defmodule SecretMana.Config do
   end
 
   def base_path() do
-    Application.get_env(:secret_mana, :base_path, default_base_path())
-    |> Path.expand()
+    Application.app_dir(
+      otp_app(),
+      Application.get_env(:secret_mana, :base_path, default_base_path())
+    )
   end
 
   def default_key_file() do
