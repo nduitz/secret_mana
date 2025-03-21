@@ -29,6 +29,11 @@ defmodule SecretMana do
       The `otp_app` configuration is required.
       """
 
+    if secrets() && !File.exists?(secret_file()) do
+      File.write(secret_file(), secrets(), [:binary])
+      File.chmod(secret_file(), 0o600)
+    end
+
     Supervisor.start_link([], strategy: :one_for_one)
   end
 

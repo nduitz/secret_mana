@@ -59,6 +59,10 @@ defmodule SecretMana.Config do
     Path.join([base_path(), Application.get_env(:secret_mana, :key_file, default_key_file())])
   end
 
+  def secrets() do
+    Application.get_env(:secret_mana, :secrets, nil)
+  end
+
   def default_pub_key_file() do
     "age.pub"
   end
