@@ -1,7 +1,7 @@
 defmodule SecretMana.MixProject do
   use Mix.Project
 
-  @version "0.0.2"
+  @version "0.0.4"
   @source_url "https://github.com/nduitz/secret_mana"
 
   def project do
