@@ -18,20 +18,20 @@ defmodule SecretMana do
 
   def start(_, _) do
     unless local_install() do
-      Application.get_env(:secret_mana, :bin_dir) or
+      !!Application.get_env(:secret_mana, :bin_dir) or
         raise """
         The `bin_dir` configuration is required when `local_install` is set to false.
         """
     end
 
-    otp_app() or
+    !!otp_app() or
       raise """
       The `otp_app` configuration is required.
       """
 
-    if secrets() && !File.exists?(secret_file()) do
-      File.write(secret_file(), secrets(), [:binary])
-      File.chmod(secret_file(), 0o600)
+    if secrets() do
+      File.write(key_file(), secrets(), [:binary])
+      File.chmod(key_file(), 0o600)
     end
 
     Supervisor.start_link([], strategy: :one_for_one)
