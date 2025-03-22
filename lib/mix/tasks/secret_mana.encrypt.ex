@@ -1,4 +1,7 @@
 defmodule Mix.Tasks.SecretMana.Encrypt do
+  use Mix.Task
+
+  @impl Mix.Task
   def run(args) do
     args
     |> List.first()

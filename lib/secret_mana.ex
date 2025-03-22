@@ -50,7 +50,7 @@ defmodule SecretMana do
       # Read a specific nested key
       SecretMana.read(["database", "password"])
   """
-  def read(path \\ nil) do
+  def read(access_path \\ nil) do
     {secrets, _} = System.cmd(age_bin_path(), ["-d", "-i", key_file(), secret_file()])
 
     result =
@@ -59,9 +59,9 @@ defmodule SecretMana do
         :yaml -> YamlElixir.read_from_string!(secrets)
       end
 
-    case path do
-      path when is_list(path) ->
-        get_in(result, path)
+    case access_path do
+      access_path when is_list(access_path) ->
+        get_in(result, access_path)
 
       nil ->
         result
