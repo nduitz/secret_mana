@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Age.Install do
+defmodule Mix.Tasks.SecretMana.Install do
   use Mix.Task
 
   def run(_opts) do

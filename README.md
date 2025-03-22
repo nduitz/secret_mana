@@ -39,13 +39,13 @@ config :secret_mana,
 
 ### Mix Tasks
 
-`mix age.install` - install
+`mix secret_mana.install` - install
 
-`mix age.gen.key` - generates a new key pair depending on your config
+`mix secret_mana.gen.key` - generates a new key pair depending on your config
 
-`mix age.encrypt file` - encrypts a given json/yaml file and stores it accordingly to your config
+`mix secret_mana.encrypt file` - encrypts a given json/yaml file and stores it accordingly to your config
 
-`EDITOR="code --wait" mix age.edit` - allows editing your secrets (falls back to `vim`)
+`EDITOR="code --wait" mix secret_mana.edit` - allows editing your secrets (falls back to `vim`)
 
 ### Reading your secrets
 

@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Age.Gen.Key do
+defmodule Mix.Tasks.SecretMana.Gen.Key do
   use Mix.Task
 
   def run(_opts) do

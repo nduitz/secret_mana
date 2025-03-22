@@ -128,7 +128,7 @@ defmodule SecretMana do
       raise """
       Public key not found, please generate secret key first or define path.
 
-      Usage: mix age.gen.key
+      Usage: mix secret_mana.gen.key
       """
 
     if check_file_type, do: check_file_type(file)

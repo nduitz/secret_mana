@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Age.Encrypt do
+defmodule Mix.Tasks.SecretMana.Encrypt do
   def run(args) do
     args
     |> List.first()
@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Age.Encrypt do
         SecretMana.encrypt(file)
       else
         raise """
-        Usage: mix age.encrypt <file>
+        Usage: mix secret_mana.encrypt <file>
         """
       end
     end)
