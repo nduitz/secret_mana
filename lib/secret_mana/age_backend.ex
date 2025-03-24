@@ -86,18 +86,22 @@ defmodule SecretMana.AgeBackend do
   def read(config, access_path) do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
-      absolute_key_file_path: absolute_key_file_path,
       absolute_encrypted_file_path: absolute_encrypted_file_path,
       file_type: file_type
     } = config.backend_config
 
-    {secrets, _} =
-      System.cmd(absolute_age_bin_path, [
-        "-d",
-        "-i",
-        absolute_key_file_path,
-        absolute_encrypted_file_path
-      ])
+    secrets =
+      with_file_secret(config, fn key_file_path ->
+        {secrets, _} =
+          System.cmd(absolute_age_bin_path, [
+            "-d",
+            "-i",
+            key_file_path,
+            absolute_encrypted_file_path
+          ])
+
+        secrets
+      end)
 
     result =
       case file_type do
@@ -142,18 +146,42 @@ defmodule SecretMana.AgeBackend do
   def decrypt(config, path) do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
-      absolute_key_file_path: absolute_key_file_path,
       absolute_encrypted_file_path: absolute_encrypted_file_path
     } = config.backend_config
 
-    System.cmd(absolute_age_bin_path, [
-      "-d",
-      "-i",
-      absolute_key_file_path,
-      "-o",
-      path,
-      absolute_encrypted_file_path
-    ])
+    with_file_secret(config, fn key_file_path ->
+      System.cmd(absolute_age_bin_path, [
+        "-d",
+        "-i",
+        key_file_path,
+        "-o",
+        path,
+        absolute_encrypted_file_path
+      ])
+    end)
+  end
+
+  defp with_file_secret(config, fun) do
+    %{
+      absolute_key_file_path: absolute_key_file_path,
+      string_identity_file: string_identity_file
+    } =
+      config.backend_config
+
+    if string_identity_file do
+      {temp_file, _} = System.cmd("mktemp", [])
+      temp_file = String.trim(temp_file)
+      File.write!(temp_file, string_identity_file, [:binary])
+      File.chmod(temp_file, 0o600)
+
+      result = fun.(temp_file)
+
+      File.rm_rf!(temp_file)
+
+      result
+    else
+      fun.(absolute_key_file_path)
+    end
   end
 
   @impl true
