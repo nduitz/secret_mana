@@ -2,6 +2,10 @@
 
 # Changelog
 
+### v0.0.4 (2024-03-24)
+
+- Reworked the whole thing to a backend pattern. This allows other users to develop their own backends if needed
+
 ### v0.0.4 (2024-03-22)
 
 - Fix pathes by using otp app path.
