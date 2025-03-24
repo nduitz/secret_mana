@@ -1,23 +1,19 @@
 defmodule SecretMana.Config do
   @public_config_keys [
     backend: SecretMana.AgeBackend,
-    otp_app: nil
+    otp_app: nil,
+    release: false
   ]
   @private_config_keys [
-    backend_config: nil,
-    runtime: false
+    backend_config: nil
   ]
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
-  defmacro __using__(opts) do
+  def new() do
     {invalid_config_keys, config} =
       :secret_mana
       |> Application.get_all_env()
       |> Keyword.split(@public_config_keys)
-
-    {runtime, []} = Keyword.pop(opts, :runtime, false)
-
-    config = Keyword.merge(config, runtime: runtime)
 
     unless invalid_config_keys == [] do
       raise """
@@ -25,16 +21,6 @@ defmodule SecretMana.Config do
       """
     end
 
-    quote do
-      Module.put_attribute(
-        __MODULE__,
-        :secret_mana_config,
-        SecretMana.Config.new(unquote(config))
-      )
-    end
-  end
-
-  def new(config) do
     struct(__MODULE__, config)
     |> put_backend_config
   end

@@ -34,10 +34,10 @@ defmodule SecretMana.AgeBackend do
     config = Application.get_env(:secret_mana, __MODULE__)
 
     struct(__MODULE__, config)
-    |> put_absolute_bin_dir_path(base_config.runtime)
+    |> put_absolute_bin_dir_path(base_config.release)
     |> put_absolute_age_bin_path()
     |> put_absolute_age_keygen_bin_path()
-    |> put_absolute_base_path(base_config.runtime)
+    |> put_absolute_base_path(base_config.release)
     |> put_abolute_key_file_path()
     |> put_abolute_pub_key_file_path()
     |> put_abolute_encrypted_file_path()

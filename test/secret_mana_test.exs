@@ -42,7 +42,7 @@ defmodule SecretManaTest do
       backend: SecretMana.AgeBackend,
       otp_app: nil,
       backend_config: backend_config,
-      runtime: false
+      release: false
     }
 
     # Create necessary files
