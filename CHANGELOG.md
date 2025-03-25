@@ -2,7 +2,7 @@
 
 # Changelog
 
-### v0.0.4 (2024-03-25)
+### v0.0.5 (2024-03-25)
 
 - Reworked the whole thing to a backend pattern. This allows other users to develop their own backends if needed
 
