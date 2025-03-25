@@ -3,6 +3,7 @@ defmodule Mix.Tasks.SecretMana.Edit do
 
   @impl Mix.Task
   def run(_) do
-    SecretMana.edit()
+    SecretMana.Config.new()
+    |> SecretMana.edit()
   end
 end

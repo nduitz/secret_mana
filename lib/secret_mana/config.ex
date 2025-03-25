@@ -1,124 +1,31 @@
 defmodule SecretMana.Config do
-  @latest_version "1.2.1"
+  @public_config_keys [
+    backend: SecretMana.AgeBackend,
+    otp_app: nil,
+    release: false
+  ]
+  @private_config_keys [
+    backend_config: nil
+  ]
+  defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
-  def otp_app() do
-    Application.fetch_env!(:secret_mana, :otp_app)
-  end
+  def new() do
+    {invalid_config_keys, config} =
+      :secret_mana
+      |> Application.get_all_env()
+      |> Keyword.split(@public_config_keys)
 
-  def version() do
-    Application.get_env(:secret_mana, :version, @latest_version)
-  end
-
-  def local_install() do
-    Application.get_env(:secret_mana, :local_install, true)
-  end
-
-  def bin_dir() do
-    local_install()
-    |> if do
-      name = "age-#{version()}"
-
-      Application.app_dir(otp_app(), "_build/#{name}/")
-    else
-      Application.fetch_env!(:secret_mana, :bin_dir)
+    unless invalid_config_keys == [] do
+      raise """
+        Invalid configuration keys: #{inspect(invalid_config_keys)}
+      """
     end
+
+    struct(__MODULE__, config)
+    |> put_backend_config
   end
 
-  def age_bin_path() do
-    Path.join([bin_dir(), "age"])
-  end
-
-  def age_keygen_bin_path() do
-    Path.join([bin_dir(), "age-keygen"])
-  end
-
-  def default_base_url do
-    "https://github.com/FiloSottile/age/releases/download/v$version/age-v$version-$target"
-  end
-
-  def file_type() do
-    Application.get_env(:secret_mana, :file_type, :json)
-  end
-
-  def default_base_path() do
-    "config/"
-  end
-
-  def base_path() do
-    Application.app_dir(
-      otp_app(),
-      Application.get_env(:secret_mana, :base_path, default_base_path())
-    )
-  end
-
-  def default_key_file() do
-    "age.key"
-  end
-
-  def key_file() do
-    Path.join([base_path(), Application.get_env(:secret_mana, :key_file, default_key_file())])
-  end
-
-  def secrets() do
-    Application.get_env(:secret_mana, :secrets, nil)
-  end
-
-  def default_pub_key_file() do
-    "age.pub"
-  end
-
-  def pub_key_file() do
-    Path.join([
-      base_path(),
-      Application.get_env(:secret_mana, :pub_key_file, default_pub_key_file())
-    ])
-  end
-
-  def default_secret_file() do
-    "age.enc"
-  end
-
-  def secret_file() do
-    Path.join([
-      base_path(),
-      Application.get_env(:secret_mana, :secret_file, default_secret_file())
-    ])
-  end
-
-  def target() do
-    arch_str = :erlang.system_info(:system_architecture)
-    target_triple = arch_str |> List.to_string() |> String.split("-")
-
-    {arch, abi} =
-      case target_triple do
-        [arch, _vendor, _system, abi] -> {arch, abi}
-        [arch, _vendor, abi] -> {arch, abi}
-        [arch | _] -> {arch, nil}
-      end
-
-    case {:os.type(), arch, abi, :erlang.system_info(:wordsize) * 8} do
-      {{:win32, _}, _arch, _abi, 64} ->
-        "windows-amd64.zip"
-
-      {{:unix, :darwin}, arch, _abi, 64} when arch in ~w(arm aarch64) ->
-        "darwin-arm64.tar.gz"
-
-      {{:unix, :darwin}, "x86_64", _abi, 64} ->
-        "darwin-amd64.tar.gz"
-
-      {{:unix, _osname}, arch, _abi, 64} when arch in ~w(x86_64 amd64) ->
-        "linux-amd64.tar.gz"
-
-      {_os, _arch, _abi, _wordsize} ->
-        raise "Not yet implemented or unsupported"
-    end
-  end
-
-  def protocol_versions do
-    if otp_version() < 25, do: [:"tlsv1.2"], else: [:"tlsv1.2", :"tlsv1.3"]
-  end
-
-  def otp_version do
-    :erlang.system_info(:otp_release) |> List.to_integer()
+  defp put_backend_config(config) do
+    %__MODULE__{config | backend_config: apply(config.backend, :config, [config])}
   end
 end

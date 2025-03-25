@@ -3,6 +3,7 @@ defmodule Mix.Tasks.SecretMana.Install do
 
   @impl Mix.Task
   def run(_opts) do
-    SecretMana.install()
+    SecretMana.Config.new()
+    |> SecretMana.install()
   end
 end

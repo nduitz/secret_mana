@@ -3,6 +3,7 @@ defmodule Mix.Tasks.SecretMana.Gen.Key do
 
   @impl Mix.Task
   def run(_opts) do
-    SecretMana.gen_key()
+    SecretMana.Config.new()
+    |> SecretMana.gen_key()
   end
 end

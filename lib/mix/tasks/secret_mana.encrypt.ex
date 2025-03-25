@@ -7,7 +7,8 @@ defmodule Mix.Tasks.SecretMana.Encrypt do
     |> List.first()
     |> then(fn file ->
       if file do
-        SecretMana.encrypt(file)
+        SecretMana.Config.new()
+        |> SecretMana.encrypt(file)
       else
         raise """
         Usage: mix secret_mana.encrypt <file>

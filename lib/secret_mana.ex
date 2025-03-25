@@ -1,39 +1,44 @@
 defmodule SecretMana do
   @moduledoc """
-  SecretMana is a module for managing encrypted secrets using age (https://github.com/FiloSottile/age).
+  SecretMana is a module for managing encrypted secrets build to support various backends.
+  Currently only age (https://github.com/FiloSottile/age) is supported.
 
-  This module provides functionality to:
-  - Read encrypted secrets
-  - Edit secrets with your preferred editor
-  - Encrypt/decrypt files
-  - Generate age keys
-  - Install the age binary
+  This module is a wrapper for the `SecretMana.Backend`:
+  - Read encrypted secrets with support for nested key access
+  - Edit secrets using your preferred editor
+  - Encrypt/decrypt files in supported formats
+  - Generate keys for storing secrets
+  - Install backend
 
-  SecretMana supports both JSON and YAML formats for secret files.
+  ## Examples
+      # Read all secrets
+      secrets = SecretMana.read(config)
+
+      # Read a specific nested key
+      password = SecretMana.read(config, ["database", "password"])
+
+      # Edit secrets in your preferred editor
+      :ok = SecretMana.edit(config)
+
+      # Encrypt a new secrets file
+      :ok = SecretMana.encrypt(config, "new_secrets.json")
+
+      # Generate a new key pair
+      :ok = SecretMana.gen_key(config)
+
+      # Install age binary
+      :ok = SecretMana.install(config)
   """
 
   use Application
-  require Logger
-  import SecretMana.Config
+
+  defmacro __using__(_) do
+    quote do
+      Application.ensure_all_started(:secret_mana)
+    end
+  end
 
   def start(_, _) do
-    unless local_install() do
-      !!Application.get_env(:secret_mana, :bin_dir) or
-        raise """
-        The `bin_dir` configuration is required when `local_install` is set to false.
-        """
-    end
-
-    !!otp_app() or
-      raise """
-      The `otp_app` configuration is required.
-      """
-
-    if secrets() do
-      File.write(key_file(), secrets(), [:binary])
-      File.chmod(key_file(), 0o600)
-    end
-
     Supervisor.start_link([], strategy: :one_for_one)
   end
 
@@ -41,37 +46,21 @@ defmodule SecretMana do
   Reads and decrypts secrets from the configured secret file.
 
   ## Parameters
-    * `path` - Optional list of keys to traverse the secret structure, defaults to nil which returns the entire secret
+    * `config` - The SecretMana configuration struct
+    * `access_path` - Optional list of keys to traverse the secret structure, defaults to nil which returns the entire secret
+
+  ## Returns
+    * `term()` - The decrypted secrets
 
   ## Examples
       # Read all secrets
-      SecretMana.read()
+      secrets = SecretMana.read(config)
 
       # Read a specific nested key
-      SecretMana.read(["database", "password"])
+      password = SecretMana.read(config, ["database", "password"])
   """
-  def read(access_path \\ nil) do
-    {secrets, _} = System.cmd(age_bin_path(), ["-d", "-i", key_file(), secret_file()])
-
-    result =
-      case file_type() do
-        :json -> Jason.decode!(secrets)
-        :yaml -> YamlElixir.read_from_string!(secrets)
-      end
-
-    case access_path do
-      access_path when is_list(access_path) ->
-        get_in(result, access_path)
-
-      nil ->
-        result
-
-      _ ->
-        raise """
-        Invalid path, please provide a list of keys to traverse the secret.
-        Example: ["key", "subkey"]
-        """
-    end
+  def read(config, access_path \\ nil) do
+    apply(config.backend, :read, [config, access_path])
   end
 
   @doc """
@@ -79,37 +68,17 @@ defmodule SecretMana do
 
   Uses the EDITOR environment variable to determine which editor to use, falls back to vim if not set.
 
+  ## Parameters
+    * `config` - The SecretMana configuration struct
+
+  ## Returns
+    * `:ok` - Successfully edited and re-encrypted secrets
+
   ## Examples
-      SecretMana.edit()
+      :ok = SecretMana.edit(config)
   """
-  def edit() do
-    editor = System.get_env("EDITOR")
-    {temp_file, _} = System.cmd("mktemp", [])
-    temp_file = String.trim(temp_file)
-    System.cmd(age_bin_path(), ["-d", "-o", temp_file, "-i", key_file(), secret_file()])
-
-    run_editor(editor, temp_file)
-
-    encrypt(temp_file, false)
-    File.rm!(temp_file)
-  end
-
-  defp run_editor(editor_command, temp_file)
-
-  defp run_editor(nil, temp_file) do
-    port = Port.open({:spawn, "vim #{temp_file}"}, [:nouse_stdio, :exit_status])
-
-    receive do
-      {^port, {:exit_status, _exit_status}} ->
-        # all done
-        nil
-    end
-  end
-
-  defp run_editor(editor_command, temp_file) do
-    [editor_bin | editor_args] = String.split(editor_command, " ")
-
-    System.cmd(editor_bin, editor_args ++ [temp_file])
+  def edit(config) do
+    apply(config.backend, :edit, [config])
   end
 
   @doc """
@@ -118,54 +87,19 @@ defmodule SecretMana do
   The file must be in the format specified by the configuration (JSON or YAML).
 
   ## Parameters
+    * `config` - The SecretMana configuration struct
     * `file` - Path to the file to encrypt
+    * `check_file_type` - Whether to validate the file format matches the configured format, defaults to true
+
+  ## Returns
+    * `:ok` - Successfully encrypted the file
 
   ## Examples
-      SecretMana.encrypt("secrets.json")
+      :ok = SecretMana.encrypt(config, "secrets.json")
+      :ok = SecretMana.encrypt(config, "secrets.json", false)
   """
-  def encrypt(file, check_file_type \\ true) do
-    File.exists?(pub_key_file()) or
-      raise """
-      Public key not found, please generate secret key first or define path.
-
-      Usage: mix secret_mana.gen.key
-      """
-
-    if check_file_type, do: check_file_type(file)
-
-    System.cmd(
-      age_bin_path(),
-      [
-        "-o",
-        secret_file(),
-        "-R",
-        pub_key_file(),
-        file
-      ]
-    )
-  end
-
-  defp check_file_type(file) do
-    file_ext = Path.extname(file)
-
-    cond do
-      file_type() == :json && file_ext == ".json" ->
-        file
-        |> File.read!()
-        |> Jason.decode!()
-
-      file_type() == :yaml && (file_ext == ".yaml" || file_ext == ".yml") ->
-        YamlElixir.read_from_file!(file)
-
-      true ->
-        raise """
-        Unsupported file type, only JSON and YAML files are supported.
-        Make sure config and file extensions match:
-
-        config: #{file_type()}
-        extension: #{file_ext}
-        """
-    end
+  def encrypt(config, file, check_file_type \\ true) do
+    apply(config.backend, :encrypt, [config, file, check_file_type])
   end
 
   @doc """
@@ -173,15 +107,17 @@ defmodule SecretMana do
 
   Creates both a private key file and a public key file.
 
-  ## Examples
-      SecretMana.gen_key()
-  """
-  def gen_key() do
-    System.cmd("mkdir", ["-p", base_path()])
+  ## Parameters
+    * `config` - The SecretMana configuration struct
 
-    System.cmd(age_keygen_bin_path(), ["-o", key_file()])
-    {pub_key, _} = System.cmd(age_keygen_bin_path(), ["-y", key_file()])
-    File.write!(pub_key_file(), pub_key, [:binary])
+  ## Returns
+    * `:ok` - Successfully generated key pair
+
+  ## Examples
+      :ok = SecretMana.gen_key(config)
+  """
+  def gen_key(config) do
+    apply(config.backend, :gen_key, [config])
   end
 
   @doc """
@@ -189,124 +125,16 @@ defmodule SecretMana do
 
   Automatically detects the correct version based on the current system architecture.
 
+  ## Parameters
+    * `config` - The SecretMana configuration struct
+
+  ## Returns
+    * `:ok` - Successfully installed age binary
+
   ## Examples
-      SecretMana.install()
+      :ok = SecretMana.install(config)
   """
-  def install() do
-    if local_install() do
-      File.mkdir_p!(bin_dir())
-
-      File.ls!(bin_dir())
-      |> Enum.sort()
-      |> case do
-        [] ->
-          Logger.info("Installing age...")
-
-          base_url = default_base_url()
-          url = get_url(base_url)
-          body = fetch_body!(url)
-
-          extract_binaries(body)
-
-          Logger.info("Installation complete...")
-
-        ["age", "age-keygen"] ->
-          Logger.info("age already installed")
-      end
-    else
-      Logger.info("Local install disabled. age should be installed in `#{bin_dir()}`")
-    end
-  end
-
-  defp fetch_body!(url, retry \\ true) do
-    url = String.to_charlist(url)
-    Logger.debug("Downloading age from #{url}")
-
-    {:ok, _} = Application.ensure_all_started(:inets)
-    {:ok, _} = Application.ensure_all_started(:ssl)
-
-    http_options =
-      [
-        ssl: [
-          verify: :verify_peer,
-          cacerts: :public_key.cacerts_get(),
-          depth: 2,
-          customize_hostname_check: [
-            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
-          ],
-          versions: protocol_versions()
-        ]
-      ]
-
-    options = [body_format: :binary]
-
-    case {retry, :httpc.request(:get, {url, []}, http_options, options)} do
-      {_, {:ok, {{_, 200, _}, _headers, body}}} ->
-        body
-
-      {_, {:ok, {{_, 404, _}, _headers, _body}}} ->
-        raise """
-        The age binary couldn't be found at: #{url}
-
-        This could mean that you're trying to install a version that does not support the detected
-        target architecture.
-
-        You can see the available files for the configured version at:
-
-        https://github.com/FiloSottile/age/releases/tag/v#{version()}
-        """
-
-      {true, {:error, {:failed_connect, [{:to_address, _}, {inet, _, reason}]}}}
-      when inet in [:inet, :inet6] and
-             reason in [:ehostunreach, :enetunreach, :eprotonosupport, :nxdomain] ->
-        :httpc.set_options(ipfamily: fallback(inet))
-        fetch_body!(to_string(url), false)
-
-      other ->
-        raise """
-        Couldn't fetch #{url}: #{inspect(other)}
-
-        This typically means we cannot reach the source or you are behind a proxy.
-        You can try again later and, if that does not work,
-        you might manually download the executable from the URL above and
-        place it inside "_build/age-#{version()}".
-        """
-    end
-  end
-
-  defp fallback(:inet), do: :inet6
-  defp fallback(:inet6), do: :inet
-
-  defp extract_binaries(body) do
-    {temp_dir, _} = System.cmd("mktemp", ["-d"])
-    temp_dir = String.trim(temp_dir)
-
-    case target() do
-      "windows-amd64.zip" ->
-        Application.ensure_all_started(:erl_tar)
-
-        :zip.extract(body, cwd: temp_dir)
-
-      _ ->
-        Application.ensure_all_started(:erl_tar)
-
-        :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
-    end
-
-    File.mkdir_p!(bin_dir())
-
-    File.cp!(Path.join([temp_dir, "age", "age"]), age_bin_path())
-    File.cp!(Path.join([temp_dir, "age", "age-keygen"]), age_keygen_bin_path())
-
-    File.chmod(age_bin_path(), 0o755)
-    File.chmod(age_keygen_bin_path(), 0o755)
-
-    System.cmd("rm", ["-rf", temp_dir])
-  end
-
-  defp get_url(base_url) do
-    base_url
-    |> String.replace("$version", version())
-    |> String.replace("$target", target())
+  def install(config) do
+    apply(config.backend, :install, [config])
   end
 end
