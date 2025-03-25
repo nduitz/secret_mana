@@ -8,14 +8,12 @@ defmodule SecretMana.Backend do
   @type key_path :: list(String.t())
 
   @callback config(config()) :: config()
-  @callback install(config()) :: :ok | {:error, String.t()}
-  @callback encrypt(config(), file_path(), check_file_type :: boolean()) ::
-              :ok | {:error, String.t()}
-  @callback decrypt(config(), String.t()) ::
-              :ok | {:error, String.t()}
-  @callback gen_key(config()) :: :ok | {:error, String.t()}
-  @callback edit(config()) :: :ok | {:error, String.t()}
-  @callback read(config(), key_path()) :: {:ok, map()} | {:error, String.t()}
+  @callback install(config()) :: :ok
+  @callback encrypt(config(), file_path(), check_file_type :: boolean()) :: :ok
+  @callback decrypt(config(), String.t()) :: :ok
+  @callback gen_key(config()) :: :ok
+  @callback edit(config()) :: :ok
+  @callback read(config(), key_path()) :: term()
   @callback download_url(config()) :: String.t()
 
   @optional_callbacks [

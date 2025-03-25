@@ -159,6 +159,8 @@ defmodule SecretMana.AgeBackend do
         absolute_encrypted_file_path
       ])
     end)
+
+    :ok
   end
 
   defp with_file_secret(config, fun) do
@@ -234,6 +236,8 @@ defmodule SecretMana.AgeBackend do
       System.cmd(absolute_absolute_age_keygen_bin_path, ["-y", absolute_key_file_path])
 
     File.write!(absolute_pub_key_file_path, pub_key, [:binary])
+
+    :ok
   end
 
   @impl true
