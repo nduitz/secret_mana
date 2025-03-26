@@ -150,14 +150,15 @@ defmodule SecretMana.AgeBackend do
     } = config.backend_config
 
     with_file_secret(config, fn key_file_path ->
-      System.cmd(absolute_age_bin_path, [
-        "-d",
-        "-i",
-        key_file_path,
-        "-o",
-        path,
-        absolute_encrypted_file_path
-      ])
+      {_, 0} =
+        System.cmd(absolute_age_bin_path, [
+          "-d",
+          "-i",
+          key_file_path,
+          "-o",
+          path,
+          absolute_encrypted_file_path
+        ])
     end)
 
     :ok
@@ -228,11 +229,14 @@ defmodule SecretMana.AgeBackend do
       absolute_base_path: absolute_base_path
     } = config.backend_config
 
-    System.cmd("mkdir", ["-p", absolute_base_path])
+    {_, 0} = System.cmd("mkdir", ["-p", absolute_base_path])
 
-    System.cmd(absolute_absolute_age_keygen_bin_path, ["-o", absolute_key_file_path])
+    {_, 0} =
+      System.cmd(absolute_absolute_age_keygen_bin_path, ["-o", absolute_key_file_path],
+        use_stdio: false
+      )
 
-    {pub_key, _} =
+    {pub_key, 0} =
       System.cmd(absolute_absolute_age_keygen_bin_path, ["-y", absolute_key_file_path])
 
     File.write!(absolute_pub_key_file_path, pub_key, [:binary])
@@ -248,7 +252,6 @@ defmodule SecretMana.AgeBackend do
 
   defp extract_binaries(config, body) do
     %{
-      absolute_bin_dir_path: absolute_bin_dir_path,
       absolute_age_bin_path: absolute_age_bin_path,
       absolute_absolute_age_keygen_bin_path: absolute_absolute_age_keygen_bin_path
     } = config.backend_config
@@ -268,8 +271,6 @@ defmodule SecretMana.AgeBackend do
         :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
     end
 
-    File.mkdir_p!(absolute_bin_dir_path)
-
     File.cp!(Path.join([temp_dir, "age", "age"]), absolute_age_bin_path)
 
     File.cp!(
@@ -277,8 +278,8 @@ defmodule SecretMana.AgeBackend do
       absolute_absolute_age_keygen_bin_path
     )
 
-    File.chmod(absolute_age_bin_path, 0o755)
-    File.chmod(absolute_absolute_age_keygen_bin_path, 0o755)
+    File.chmod!(absolute_age_bin_path, 0o755)
+    File.chmod!(absolute_absolute_age_keygen_bin_path, 0o755)
 
     File.rm_rf!(temp_dir)
   end
@@ -305,9 +306,11 @@ defmodule SecretMana.AgeBackend do
 
     bin_dir =
       if local_install do
-        name = "age-#{version}"
+        name = "aqe-#{version}"
 
-        "_build/#{name}/"
+        :secret_mana
+        |> Application.app_dir()
+        |> Path.join(name)
       else
         !!config.bin_dir or
           raise """

@@ -2,13 +2,7 @@ defmodule SecretMana.Util do
   require Logger
 
   def open_editor_with_temp_file(nil, temp_file) do
-    port = Port.open({:spawn, "vim #{temp_file}"}, [:nouse_stdio, :exit_status])
-
-    receive do
-      {^port, {:exit_status, _exit_status}} ->
-        # all done
-        nil
-    end
+    System.cmd("vim", [temp_file], use_stdio: false)
   end
 
   def open_editor_with_temp_file(editor_command, temp_file) do

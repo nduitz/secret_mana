@@ -59,8 +59,12 @@ defmodule SecretMana do
       # Read a specific nested key
       password = SecretMana.read(config, ["database", "password"])
   """
-  def read(config, access_path \\ nil) do
-    apply(config.backend, :read, [config, access_path])
+  defmacro read(access_path \\ nil) do
+    quote do
+      config = SecretMana.Config.new()
+
+      apply(config.backend, :read, [config, unquote(access_path)])
+    end
   end
 
   @doc """
