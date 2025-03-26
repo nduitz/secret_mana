@@ -35,10 +35,10 @@ defmodule SecretMana.AgeBackend do
     config = Application.get_env(:secret_mana, __MODULE__)
 
     struct(__MODULE__, config)
-    |> put_absolute_bin_dir_path(base_config.release)
+    |> put_absolute_bin_dir_path()
     |> put_absolute_age_bin_path()
     |> put_absolute_age_keygen_bin_path()
-    |> put_absolute_base_path(base_config.release)
+    |> put_absolute_base_path(base_config)
     |> put_abolute_key_file_path()
     |> put_abolute_pub_key_file_path()
     |> put_abolute_encrypted_file_path()
@@ -309,33 +309,31 @@ defmodule SecretMana.AgeBackend do
     end
   end
 
-  defp put_absolute_bin_dir_path(config, use_otp_path) do
-    %__MODULE__{config | absolute_bin_dir_path: absolute_bin_dir_path(config, use_otp_path)}
+  defp put_absolute_bin_dir_path(config) do
+    %__MODULE__{config | absolute_bin_dir_path: absolute_bin_dir_path(config)}
   end
 
-  defp absolute_bin_dir_path(config, use_otp_path) do
+  defp absolute_bin_dir_path(config) do
     %__MODULE__{version: version, local_install: local_install} = config
 
-    bin_dir =
-      if local_install do
-        name = "age-#{version}"
+    if local_install do
+      name = "age-#{version}"
 
-        :secret_mana
-        |> Application.app_dir()
-        |> Path.join(name)
-      else
-        !!config.bin_dir or
-          raise """
-            The `bin_dir` configuration is required when `local_install` is set to false.
-          """
-
-        config.bin_dir
-      end
-
-    if use_otp_path do
-      Application.app_dir(config.otp_app, bin_dir)
+      :secret_mana
+      |> Application.app_dir()
+      |> Path.join(name)
     else
-      Path.expand(bin_dir)
+      !!config.bin_dir or
+        raise """
+          The `bin_dir` configuration is required when `local_install` is set to false.
+        """
+
+      Path.type(config.bin_dir) == :absolute or
+        raise """
+          The `bin_dir` configuration must be an absolute path.
+        """
+
+      config.bin_dir
     end
   end
 
@@ -372,13 +370,15 @@ defmodule SecretMana.AgeBackend do
     end
   end
 
-  defp put_absolute_base_path(config, use_otp_path) do
-    %__MODULE__{config | absolute_base_path: absolute_base_path(config, use_otp_path)}
+  defp put_absolute_base_path(config, base_config) do
+    %__MODULE__{config | absolute_base_path: absolute_base_path(config, base_config)}
   end
 
-  defp absolute_base_path(config, use_otp_path) do
-    if use_otp_path do
-      Application.app_dir(config.otp_app, config.secret_base_path)
+  defp absolute_base_path(config, base_config) do
+    %{release: release, otp_app: otp_app} = base_config
+
+    if release do
+      Application.app_dir(otp_app, config.secret_base_path)
     else
       Path.expand(config.secret_base_path)
     end

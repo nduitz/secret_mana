@@ -205,7 +205,7 @@ defmodule SecretManaTest do
     config =
       [
         version: version,
-        bin_dir: Path.join(["test", "binaries", "age-#{version}", "#{target}"]),
+        bin_dir: Path.join(["test", "binaries", "age-#{version}", "#{target}"]) |> Path.expand(),
         file_type: :json,
         secret_base_path: tmp_dir,
         key_file: "age.key",
