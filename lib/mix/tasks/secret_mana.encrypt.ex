@@ -3,6 +3,8 @@ defmodule Mix.Tasks.SecretMana.Encrypt do
 
   @impl Mix.Task
   def run(args) do
+    Application.ensure_all_started(:secret_mana)
+
     args
     |> List.first()
     |> then(fn file ->

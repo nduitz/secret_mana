@@ -40,7 +40,8 @@ defmodule SecretMana.MixProject do
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:mock, "~> 0.3.9", only: :test},
       {:jason, "~> 1.4"},
-      {:yaml_elixir, "~> 2.11"}
+      {:yaml_elixir, "~> 2.11"},
+      {:briefly, "~> 0.5.1"}
     ]
   end
 end

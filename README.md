@@ -29,12 +29,22 @@ end
 
 ```
 config :secret_mana,
+    backend: SecretMana.AgeBackend,
+    otp_app: :my_app,
+    release: false
+
+config :secret_mana, SecretMana.AgeBackend,
   version: "1.2.1" # default: "1.2.1", used to specify version installed
-  base_path: "config/prod" # default: "config"; path SecretMana will put files in, useful to scope for different environments
+  local_install: true/false # default: "true"; if false installation is always skipped and `bin_dir` is considered as binary path instead, useful to bundle binaries in deployments
+  bin_dir: "my_bin_path" # see `local_install`
+  secret_base_path: "config/prod" # default: "config"; path SecretMana will put files in, useful to scope for different environments
   key_file: "my.key" # default: "age.key"; used to rename key-file; stored under base_path
   pub_key_file: "my.key.pub" # default: "age.pub"; used to rename pub-key-file; stored under base_path
-  secret_file: "secret.enc" # default: "age.enc"; used to rename secret-file; stored under base_path
-  file_type: :yaml # default: :json; currently only json and yaml are supported
+  encrypted_file: "secret.enc" # default: "age.enc"; used to rename secret-file; stored under base_path
+  file_type: :yaml # default: :json; currently only json and yaml are supported,
+  binary: "age" # default: "age", only required if binary name differs from default
+  key_generator_binary: "age-keygen" # default: "age-keygen", only required if keygen-binary name differs from default,
+  string_identity_file: nil # default: nil; in deployments you don't want to bundle key files instead you can pass this setting at runtime so SecretMana uses this variable as key-file compliment
 ```
 
 ### Mix Tasks

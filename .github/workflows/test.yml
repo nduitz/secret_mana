@@ -1,0 +1,26 @@
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        otp: ["27.1.2"]
+        elixir: ["1.18.1"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        # mac is not yet supported by setup-beam
+        # os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-13 ]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - name: Check formatting
+        run: mix format --check-formatted
+        # skip on windows because different line endings (LF vs CRLF)
+        if: matrix.os != 'windows-latest'
+      - run: mix test

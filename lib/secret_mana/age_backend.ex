@@ -25,7 +25,8 @@ defmodule SecretMana.AgeBackend do
     absolute_base_path: nil,
     absolute_key_file_path: nil,
     absolute_pub_key_file_path: nil,
-    absolute_encrypted_file_path: nil
+    absolute_encrypted_file_path: nil,
+    target: SecretMana.Util.target()
   ]
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
@@ -128,8 +129,7 @@ defmodule SecretMana.AgeBackend do
   def edit(config) do
     editor = System.get_env("EDITOR")
 
-    {temp_file, _} = System.cmd("mktemp", [])
-    temp_file = String.trim(temp_file)
+    {:ok, temp_file} = Briefly.create()
 
     decrypt(config, temp_file)
 
@@ -172,8 +172,7 @@ defmodule SecretMana.AgeBackend do
       config.backend_config
 
     if string_identity_file do
-      {temp_file, _} = System.cmd("mktemp", [])
-      temp_file = String.trim(temp_file)
+      {:ok, temp_file} = Briefly.create()
       File.write!(temp_file, string_identity_file, [:binary])
       File.chmod(temp_file, 0o600)
 
@@ -253,28 +252,30 @@ defmodule SecretMana.AgeBackend do
   defp extract_binaries(config, body) do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
-      absolute_absolute_age_keygen_bin_path: absolute_absolute_age_keygen_bin_path
+      absolute_absolute_age_keygen_bin_path: absolute_absolute_age_keygen_bin_path,
+      target: target
     } = config.backend_config
 
-    {temp_dir, _} = System.cmd("mktemp", ["-d"])
-    temp_dir = String.trim(temp_dir)
+    {:ok, temp_dir} = Briefly.create(type: :directory)
 
-    case SecretMana.Util.target() do
-      "windows-amd64.zip" ->
-        Application.ensure_all_started(:erl_tar)
+    {binary, keygen_binary} =
+      case target do
+        :windows_amd_64 ->
+          cwd = String.to_charlist(temp_dir)
+          {:ok, _} = :zip.extract(body, cwd: cwd)
 
-        :zip.extract(body, cwd: temp_dir)
+          {"age.exe", "age-keygen.exe"}
 
-      _ ->
-        Application.ensure_all_started(:erl_tar)
+        _ ->
+          :ok = :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
 
-        :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
-    end
+          {"age", "age-keygen"}
+      end
 
-    File.cp!(Path.join([temp_dir, "age", "age"]), absolute_age_bin_path)
+    File.cp!(Path.join([temp_dir, "age", binary]), absolute_age_bin_path)
 
     File.cp!(
-      Path.join([temp_dir, "age", "age-keygen"]),
+      Path.join([temp_dir, "age", keygen_binary]),
       absolute_absolute_age_keygen_bin_path
     )
 
@@ -285,16 +286,27 @@ defmodule SecretMana.AgeBackend do
   end
 
   defp default_base_url do
-    "https://github.com/FiloSottile/age/releases/download/v$version/age-v$version-$target"
+    "https://github.com/FiloSottile/age/releases/download/v$version/age-v$version-$archive_name"
   end
 
   defp get_url(config, base_url) do
-    target = SecretMana.Util.target()
+    archive_name = archive_name(config)
     version = config.backend_config.version
 
     base_url
     |> String.replace("$version", version)
-    |> String.replace("$target", target)
+    |> String.replace("$archive_name", archive_name)
+  end
+
+  defp archive_name(config) do
+    case config.backend_config.target do
+      :windows_amd_64 -> "windows-amd64.zip"
+      :darwin_arm_64 -> "darwin-arm64.tar.gz"
+      :darwin_amd_64 -> "darwin-amd64.tar.gz"
+      :linux_amd_64 -> "linux-amd64.tar.gz"
+      :linux_arm_64 -> "linux-arm64.tar.gz"
+      _ -> raise "Unsupported target"
+    end
   end
 
   defp put_absolute_bin_dir_path(config, use_otp_path) do
@@ -306,7 +318,7 @@ defmodule SecretMana.AgeBackend do
 
     bin_dir =
       if local_install do
-        name = "aqe-#{version}"
+        name = "age-#{version}"
 
         :secret_mana
         |> Application.app_dir()
@@ -332,7 +344,9 @@ defmodule SecretMana.AgeBackend do
   end
 
   defp absolute_age_bin_path(config) do
-    Path.join([config.absolute_bin_dir_path, config.binary])
+    [config.absolute_bin_dir_path, config.binary]
+    |> maybe_add_exe(config)
+    |> Path.join()
   end
 
   defp put_absolute_age_keygen_bin_path(config) do
@@ -343,7 +357,19 @@ defmodule SecretMana.AgeBackend do
   end
 
   defp absolute_absolute_age_keygen_bin_path(config) do
-    Path.join([config.absolute_bin_dir_path, config.key_generator_binary])
+    [config.absolute_bin_dir_path, config.key_generator_binary]
+    |> maybe_add_exe(config)
+    |> Path.join()
+  end
+
+  defp maybe_add_exe(path_list, config) do
+    [path, binary] = path_list
+
+    if config.target == :windows_amd_64 do
+      [path, "#{binary}.exe"]
+    else
+      path_list
+    end
   end
 
   defp put_absolute_base_path(config, use_otp_path) do

@@ -32,12 +32,6 @@ defmodule SecretMana do
 
   use Application
 
-  defmacro __using__(_) do
-    quote do
-      Application.ensure_all_started(:secret_mana)
-    end
-  end
-
   def start(_, _) do
     Supervisor.start_link([], strategy: :one_for_one)
   end

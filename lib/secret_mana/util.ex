@@ -101,16 +101,19 @@ defmodule SecretMana.Util do
 
     case {:os.type(), arch, abi, :erlang.system_info(:wordsize) * 8} do
       {{:win32, _}, _arch, _abi, 64} ->
-        "windows-amd64.zip"
+        :windows_amd_64
 
       {{:unix, :darwin}, arch, _abi, 64} when arch in ~w(arm aarch64) ->
-        "darwin-arm64.tar.gz"
+        :darwin_arm_64
 
       {{:unix, :darwin}, "x86_64", _abi, 64} ->
-        "darwin-amd64.tar.gz"
+        :darwin_amd_64
 
       {{:unix, _osname}, arch, _abi, 64} when arch in ~w(x86_64 amd64) ->
-        "linux-amd64.tar.gz"
+        :linux_amd_64
+
+      {{:unix, _osname}, arch, _abi, 64} when arch in ~w(arm aarch64) ->
+        :linux_arm_64
 
       {_os, _arch, _abi, _wordsize} ->
         raise "Not yet implemented or unsupported"
