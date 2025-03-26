@@ -319,8 +319,7 @@ defmodule SecretMana.AgeBackend do
     if local_install do
       name = "age-#{version}"
 
-      :secret_mana
-      |> Application.app_dir()
+      Path.expand("_build")
       |> Path.join(name)
     else
       !!config.bin_dir or
