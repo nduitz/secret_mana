@@ -43,7 +43,6 @@ config :secret_mana, SecretMana.AgeBackend,
   file_type: :yaml # default: :json; currently only json and yaml are supported,
   binary: "age" # default: "age", only required if binary name differs from default
   key_generator_binary: "age-keygen" # default: "age-keygen", only required if keygen-binary name differs from default,
-  string_identity_file: nil # default: nil; in deployments you don't want to bundle key files instead you can pass this setting at runtime so SecretMana uses this variable as key-file compliment
 ```
 
 ### Mix Tasks

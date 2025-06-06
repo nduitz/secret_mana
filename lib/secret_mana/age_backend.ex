@@ -13,7 +13,6 @@ defmodule SecretMana.AgeBackend do
     key_file: "age.key",
     pub_key_file: "age.pub",
     encrypted_file: "age.enc",
-    string_identity_file: nil,
     binary: "age",
     key_generator_binary: "age-keygen"
   ]
@@ -31,11 +30,18 @@ defmodule SecretMana.AgeBackend do
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
   @impl true
-  def put_string_identity_file(private_key) do
-    Application.put_env(:secret_mana, __MODULE__, [
-      {:string_identity_file, private_key}
-      | Application.get_env(:secret_mana, __MODULE__, [])
-    ])
+  def generate_private_key_file(config, private_key) do
+    %{absolute_base_path: absolute_base_path, absolute_key_file_path: absolute_key_file_path} =
+      config.backend_config
+
+    # Ensure the directory exists
+    File.mkdir_p!(absolute_base_path)
+
+    # Write the private key to the correct location
+    File.write!(absolute_key_file_path, private_key, [:binary])
+
+    # Set secure file permissions (readable only by owner)
+    File.chmod!(absolute_key_file_path, 0o600)
 
     :ok
   end
@@ -98,21 +104,17 @@ defmodule SecretMana.AgeBackend do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
       absolute_encrypted_file_path: absolute_encrypted_file_path,
-      file_type: file_type
+      file_type: file_type,
+      absolute_key_file_path: absolute_key_file_path
     } = config.backend_config
 
-    secrets =
-      with_file_secret(config, fn key_file_path ->
-        {secrets, _} =
-          System.cmd(absolute_age_bin_path, [
-            "-d",
-            "-i",
-            key_file_path,
-            absolute_encrypted_file_path
-          ])
-
-        secrets
-      end)
+    {secrets, _} =
+      System.cmd(absolute_age_bin_path, [
+        "-d",
+        "-i",
+        absolute_key_file_path,
+        absolute_encrypted_file_path
+      ])
 
     result =
       case file_type do
@@ -171,44 +173,21 @@ defmodule SecretMana.AgeBackend do
   def decrypt(config, path) do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
-      absolute_encrypted_file_path: absolute_encrypted_file_path
+      absolute_encrypted_file_path: absolute_encrypted_file_path,
+      absolute_key_file_path: absolute_key_file_path
     } = config.backend_config
 
-    with_file_secret(config, fn key_file_path ->
-      {_, 0} =
-        System.cmd(absolute_age_bin_path, [
-          "-d",
-          "-i",
-          key_file_path,
-          "-o",
-          path,
-          absolute_encrypted_file_path
-        ])
-    end)
+    {_, 0} =
+      System.cmd(absolute_age_bin_path, [
+        "-d",
+        "-i",
+        absolute_key_file_path,
+        "-o",
+        path,
+        absolute_encrypted_file_path
+      ])
 
     :ok
-  end
-
-  defp with_file_secret(config, fun) do
-    %{
-      absolute_key_file_path: absolute_key_file_path,
-      string_identity_file: string_identity_file
-    } =
-      config.backend_config
-
-    if string_identity_file do
-      {:ok, temp_file} = Briefly.create()
-      File.write!(temp_file, string_identity_file, [:binary])
-      File.chmod(temp_file, 0o600)
-
-      result = fun.(temp_file)
-
-      File.rm_rf!(temp_file)
-
-      result
-    else
-      fun.(absolute_key_file_path)
-    end
   end
 
   @impl true
