@@ -31,6 +31,16 @@ defmodule SecretMana.AgeBackend do
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
   @impl true
+  def put_string_identity_file(private_key) do
+    Application.put_env(:secret_mana, __MODULE__, [
+      {:string_identity_file, private_key}
+      | Application.get_env(:secret_mana, __MODULE__, [])
+    ])
+
+    :ok
+  end
+
+  @impl true
   def config(base_config) do
     config = Application.get_env(:secret_mana, __MODULE__, [])
 

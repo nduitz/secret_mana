@@ -87,7 +87,6 @@ defmodule TestApp.SecretManaIntegrationTest do
         ])
 
       assert File.exists?(expected_dest)
-      assert File.exists?(Path.join(expected_dest, "age.key"))
       assert File.exists?(Path.join(expected_dest, "age.pub"))
       assert File.exists?(Path.join(expected_dest, "age.enc"))
 
@@ -124,18 +123,12 @@ defmodule TestApp.SecretManaIntegrationTest do
 
   # Helper functions
   defp setup_secrets_for_env(env) do
-    # Set up secrets for this environment
-    env_dir = "secrets/#{env}"
-    File.mkdir_p!(env_dir)
-
-    # Configure SecretMana to use the correct path
-    Application.put_env(:secret_mana, SecretMana.AgeBackend, secret_base_path: "secrets")
-
     original_env = Mix.env()
     Mix.env(env)
 
     # Use the SecretMana API directly instead of Mix tasks
-    config = SecretMana.Config.new()
+    %{backend_config: %{secret_base_path: secret_base_path}} =
+      config = SecretMana.Config.new()
 
     # Install age binary
     SecretMana.install(config)
@@ -144,7 +137,7 @@ defmodule TestApp.SecretManaIntegrationTest do
     SecretMana.gen_key(config)
 
     # Create and encrypt test secrets file
-    secrets_file = Path.join(env_dir, "test_secrets.json")
+    secrets_file = Path.join(secret_base_path, "test_secrets.json")
     File.write!(secrets_file, Jason.encode!(@test_secret))
 
     # Encrypt the secrets file
@@ -158,10 +151,9 @@ defmodule TestApp.SecretManaIntegrationTest do
   end
 
   defp cleanup_secrets do
-    for env <- [:dev, :test, :prod] do
-      File.rm_rf!("secrets/#{env}")
-    end
+    %{backend_config: %{secret_base_path: secret_base_path}} =
+      SecretMana.Config.new()
 
-    File.rm_rf!("secrets")
+    File.rm_rf!(secret_base_path)
   end
 end

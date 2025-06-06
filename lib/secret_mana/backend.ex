@@ -15,6 +15,7 @@ defmodule SecretMana.Backend do
   @callback edit(config()) :: :ok
   @callback read!(config(), key_path()) :: String.t()
   @callback download_url(config()) :: String.t()
+  @callback put_string_identity_file(binary()) :: :ok
 
   @optional_callbacks [
     download_url: 1
