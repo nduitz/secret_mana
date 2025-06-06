@@ -9,7 +9,7 @@ defmodule SecretMana.AgeBackend do
     local_install: true,
     bin_dir: nil,
     file_type: :json,
-    secret_base_path: "config/",
+    secret_base_path: "secrets",
     key_file: "age.key",
     pub_key_file: "age.pub",
     encrypted_file: "age.enc",
@@ -32,7 +32,7 @@ defmodule SecretMana.AgeBackend do
 
   @impl true
   def config(base_config) do
-    config = Application.get_env(:secret_mana, __MODULE__)
+    config = Application.get_env(:secret_mana, __MODULE__, [])
 
     struct(__MODULE__, config)
     |> put_absolute_bin_dir_path()
@@ -84,7 +84,7 @@ defmodule SecretMana.AgeBackend do
   end
 
   @impl true
-  def read(config, access_path) do
+  def read!(config, access_path) do
     %{
       absolute_age_bin_path: absolute_age_bin_path,
       absolute_encrypted_file_path: absolute_encrypted_file_path,
@@ -112,7 +112,16 @@ defmodule SecretMana.AgeBackend do
 
     case access_path do
       access_path when is_list(access_path) ->
-        get_in(result, access_path)
+        case get_in(result, access_path) do
+          nil ->
+            raise """
+            Key not found: #{inspect(access_path)}
+            Available keys: #{inspect(get_available_keys(result))}
+            """
+
+          value ->
+            value
+        end
 
       nil ->
         result
@@ -124,6 +133,12 @@ defmodule SecretMana.AgeBackend do
         """
     end
   end
+
+  defp get_available_keys(map) when is_map(map) do
+    Map.keys(map)
+  end
+
+  defp get_available_keys(_), do: []
 
   @impl true
   def edit(config) do
@@ -228,7 +243,7 @@ defmodule SecretMana.AgeBackend do
       absolute_base_path: absolute_base_path
     } = config.backend_config
 
-    {_, 0} = System.cmd("mkdir", ["-p", absolute_base_path])
+    File.mkdir_p!(absolute_base_path)
 
     {_, 0} =
       System.cmd(absolute_absolute_age_keygen_bin_path, ["-o", absolute_key_file_path],
@@ -374,14 +389,22 @@ defmodule SecretMana.AgeBackend do
   end
 
   defp absolute_base_path(config, base_config) do
-    %{release: release, otp_app: otp_app} = base_config
+    %{otp_app: otp_app} = base_config
 
-    if release do
-      Application.app_dir(otp_app, config.secret_base_path)
+    # Automatically detect if we're running in a release
+    if is_release_environment?() do
+      # In release mode, secrets are in config/secrets (no environment subdirectory)
+      Application.app_dir(otp_app, "config/secrets")
     else
-      Path.expand(config.secret_base_path)
+      # In development mode, use project root + secrets/<env>
+      env = Mix.env()
+      base_path = Path.expand(config.secret_base_path)
+      Path.join(base_path, to_string(env))
     end
   end
+
+  # Detect if we're running in a release environment
+  defp is_release_environment?(), do: not function_exported?(Mix, :env, 0)
 
   defp put_abolute_key_file_path(config) do
     %__MODULE__{config | absolute_key_file_path: absolute_key_file_path(config)}
