@@ -197,6 +197,8 @@ defmodule SecretMana.AgeBackend do
       config.backend_config
 
     if string_identity_file do
+      Application.ensure_started(Briefly)
+
       {:ok, temp_file} = Briefly.create()
       File.write!(temp_file, string_identity_file, [:binary])
       File.chmod(temp_file, 0o600)
