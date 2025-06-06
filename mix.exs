@@ -30,8 +30,7 @@ defmodule SecretMana.MixProject do
   def application do
     [
       extra_applications: [:logger, erl_tar: :optional, inets: :optional, ssl: :optional],
-      mod: {SecretMana, []},
-      env: [default: []]
+      mod: {SecretMana, []}
     ]
   end
 

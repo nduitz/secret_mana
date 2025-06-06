@@ -14,11 +14,11 @@ defmodule SecretManaTest do
       |> gen_secret()
       |> encrypt_secret(json_content)
 
-      result = SecretMana.read()
+      result = SecretMana.read!()
       assert result == %{"api_key" => "secret123", "nested" => %{"value" => "nested_secret"}}
 
       # Test with path
-      assert SecretMana.read(["nested", "value"]) == "nested_secret"
+      assert SecretMana.read!(["nested", "value"]) == "nested_secret"
     end
 
     test "reads and decodes YAML secrets" do
@@ -33,11 +33,11 @@ defmodule SecretManaTest do
       |> encrypt_secret(yaml_content)
 
       # Test without path
-      result = SecretMana.read()
+      result = SecretMana.read!()
       assert result == %{"api_key" => "secret123", "nested" => %{"value" => "nested_secret"}}
 
       # Test with path
-      assert SecretMana.read(["nested", "value"]) == "nested_secret"
+      assert SecretMana.read!(["nested", "value"]) == "nested_secret"
     end
   end
 
@@ -53,7 +53,7 @@ defmodule SecretManaTest do
       System.put_env("EDITOR", "echo")
 
       assert SecretMana.edit(config) == :ok
-      assert SecretMana.read() == Jason.decode!(json_content)
+      assert SecretMana.read!() == Jason.decode!(json_content)
     end
   end
 
@@ -64,7 +64,7 @@ defmodule SecretManaTest do
         |> gen_secret()
 
       assert SecretMana.encrypt(config, @json_test_file) == :ok
-      assert SecretMana.read() == Jason.decode!(File.read!(@json_test_file))
+      assert SecretMana.read!() == Jason.decode!(File.read!(@json_test_file))
     end
 
     test "encrypts YAML file" do
@@ -73,7 +73,7 @@ defmodule SecretManaTest do
         |> gen_secret()
 
       assert SecretMana.encrypt(config, @yaml_test_file) == :ok
-      assert SecretMana.read() == YamlElixir.read_from_file!(@yaml_test_file)
+      assert SecretMana.read!() == YamlElixir.read_from_file!(@yaml_test_file)
     end
 
     test "raises error when public key is missing" do
@@ -183,8 +183,7 @@ defmodule SecretManaTest do
     config =
       [
         backend: SecretMana.AgeBackend,
-        otp_app: nil,
-        release: false
+        otp_app: :secret_mana
       ]
       |> Keyword.merge(values)
 

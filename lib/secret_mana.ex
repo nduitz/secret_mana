@@ -53,11 +53,11 @@ defmodule SecretMana do
       # Read a specific nested key
       password = SecretMana.read(config, ["database", "password"])
   """
-  defmacro read(access_path \\ nil) do
+  defmacro read!(access_path \\ nil) do
     quote do
       config = SecretMana.Config.new()
 
-      apply(config.backend, :read, [config, unquote(access_path)])
+      apply(config.backend, :read!, [config, unquote(access_path)])
     end
   end
 
@@ -134,5 +134,86 @@ defmodule SecretMana do
   """
   def install(config) do
     apply(config.backend, :install, [config])
+  end
+
+  @doc """
+  Release step function that copies secrets from development directories into the release.
+
+  This function can be used as a release step in mix.exs to automatically
+  copy encrypted secrets and keys from secrets/<env>/ into the release's config/secrets/
+  directory during the build process. Only the target environment's secrets are copied
+  to avoid including secrets from other environments in the release.
+
+  ## Usage in mix.exs:
+
+      def project do
+        [
+          # ... other config
+          releases: [
+            my_app: [
+              steps: [:assemble, &SecretMana.copy_secrets_for_release/1]
+            ]
+          ]
+        ]
+      end
+
+  ## Configuration in config.exs:
+
+      config :secret_mana,
+        otp_app: :my_app
+
+  ## Directory Structure:
+
+      # Development:
+      config/secrets/dev/age.key
+      config/secrets/dev/age.pub
+      config/secrets/dev/age.enc
+      config/secrets/prod/age.key
+      config/secrets/prod/age.pub
+      config/secrets/prod/age.enc
+
+      # Release (only target environment copied):
+      lib/my_app-x.x.x/config/secrets/age.key
+      lib/my_app-x.x.x/config/secrets/age.pub
+      lib/my_app-x.x.x/config/secrets/age.enc
+
+  ## Parameters
+    * `release` - The Mix.Release struct
+
+  ## Returns
+    * `release` - The unmodified release struct (following release step convention)
+  """
+  def copy_secrets_for_release(release) do
+    %{backend_config: %{secret_base_path: secret_base_path}} = SecretMana.Config.new()
+
+    # Get the release target environment (e.g., :prod)
+    release_env = release.options[:env] || Mix.env()
+    target_env = to_string(release_env)
+
+    # Source directory (development) - only the target environment
+    source_dir = Path.join([secret_base_path, target_env]) |> Path.expand()
+
+    # Destination directory (release) - config/secrets (no environment subdirectory)
+    dest_dir =
+      Path.join([
+        release.path,
+        "lib",
+        "#{release.name}-#{release.version}",
+        "config",
+        "secrets"
+      ])
+
+    if File.exists?(source_dir) do
+      File.mkdir_p!(dest_dir)
+
+      File.cp_r!(source_dir, dest_dir)
+
+      IO.puts("SecretMana: Copied #{release_env} secrets to release")
+    else
+      IO.puts("SecretMana: No secrets found in #{source_dir} - skipping")
+    end
+
+    # Always return the release unchanged
+    release
   end
 end
