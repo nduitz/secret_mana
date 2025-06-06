@@ -137,6 +137,29 @@ defmodule SecretMana do
   end
 
   @doc """
+  Sets the private key for age encryption at runtime.
+
+  This function allows you to configure the private key dynamically at runtime,
+  typically called from runtime.exs. This is more secure than embedding the
+  private key in the release artifact.
+
+  ## Parameters
+    * `private_key` - The private key content as a string
+
+  ## Returns
+    * `:ok` - Successfully configured the private key
+
+  ## Examples
+      # In runtime.exs
+      SecretMana.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
+  """
+  def put_string_identity_file(private_key) do
+    config = SecretMana.Config.new()
+
+    apply(config.backend, :put_string_identity_file, [private_key])
+  end
+
+  @doc """
   Release step function that copies secrets from development directories into the release.
 
   This function can be used as a release step in mix.exs to automatically
@@ -144,8 +167,15 @@ defmodule SecretMana do
   directory during the build process. Only the target environment's secrets are copied
   to avoid including secrets from other environments in the release.
 
+  ## Security Note:
+
+  For enhanced security, set `embed_private_key?` to `false` and use the runtime configuration
+  approach with `SecretMana.AgeBackend.put_private_key/1` in runtime.exs instead of
+  embedding the private key in the release artifact.
+
   ## Usage in mix.exs:
 
+      # Option 1: Include private key in release (less secure)
       def project do
         [
           # ... other config
@@ -157,10 +187,27 @@ defmodule SecretMana do
         ]
       end
 
-  ## Configuration in config.exs:
+      # Option 2: Exclude private key from release (more secure)
+      def project do
+        [
+          # ... other config
+          releases: [
+            my_app: [
+              steps: [:assemble, fn release ->
+                SecretMana.copy_secrets_for_release(release, false)
+              end]
+            ]
+          ]
+        ]
+      end
 
-      config :secret_mana,
-        otp_app: :my_app
+  ## Runtime Configuration (when embed_private_key? is false):
+
+      # runtime.exs - Option 1: Using SecretMana module
+      SecretMana.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
+
+      # runtime.exs - Option 2: Using AgeBackend directly
+      SecretMana.AgeBackend.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
 
   ## Directory Structure:
 
@@ -168,23 +215,26 @@ defmodule SecretMana do
       config/secrets/dev/age.key
       config/secrets/dev/age.pub
       config/secrets/dev/age.enc
-      config/secrets/prod/age.key
-      config/secrets/prod/age.pub
-      config/secrets/prod/age.enc
 
-      # Release (only target environment copied):
+      # Release (when embed_private_key? is true):
       lib/my_app-x.x.x/config/secrets/age.key
+      lib/my_app-x.x.x/config/secrets/age.pub
+      lib/my_app-x.x.x/config/secrets/age.enc
+
+      # Release (when embed_private_key? is false):
       lib/my_app-x.x.x/config/secrets/age.pub
       lib/my_app-x.x.x/config/secrets/age.enc
 
   ## Parameters
     * `release` - The Mix.Release struct
+    * `embed_private_key?` - Whether to include the private key in the release (defaults to false for security)
 
   ## Returns
     * `release` - The unmodified release struct (following release step convention)
   """
-  def copy_secrets_for_release(release) do
-    %{backend_config: %{secret_base_path: secret_base_path}} = SecretMana.Config.new()
+  def copy_secrets_for_release(release, embed_private_key? \\ false) do
+    config = SecretMana.Config.new()
+    %{backend_config: %{secret_base_path: secret_base_path, key_file: key_file}} = config
 
     # Get the release target environment (e.g., :prod)
     release_env = release.options[:env] || Mix.env()
@@ -206,14 +256,43 @@ defmodule SecretMana do
     if File.exists?(source_dir) do
       File.mkdir_p!(dest_dir)
 
-      File.cp_r!(source_dir, dest_dir)
+      if embed_private_key? do
+        File.cp_r!(source_dir, dest_dir)
 
-      IO.puts("SecretMana: Copied #{release_env} secrets to release")
+        IO.puts(
+          "SecretMana: Copied #{release_env} secrets to release (including private key file)"
+        )
+      else
+        copy_secrets_excluding_private_key(source_dir, dest_dir, key_file)
+
+        IO.puts(
+          "SecretMana: Copied #{release_env} secrets to release (private key excluded for security)"
+        )
+      end
     else
       IO.puts("SecretMana: No secrets found in #{source_dir} - skipping")
     end
 
     # Always return the release unchanged
     release
+  end
+
+  defp copy_secrets_excluding_private_key(source_dir, dest_dir, key_file) do
+    for file <- File.ls!(source_dir) do
+      source_path = Path.join(source_dir, file)
+      dest_path = Path.join(dest_dir, file)
+
+      cond do
+        File.dir?(source_path) ->
+          File.mkdir_p!(dest_path)
+          copy_secrets_excluding_private_key(source_path, dest_path, key_file)
+
+        file != key_file ->
+          File.cp!(source_path, dest_path)
+
+        true ->
+          :skip
+      end
+    end
   end
 end
