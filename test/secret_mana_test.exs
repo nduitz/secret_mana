@@ -210,7 +210,6 @@ defmodule SecretManaTest do
         key_file: "age.key",
         pub_key_file: "age.pub",
         encrypted_file: "age.enc",
-        string_identity_file: nil,
         binary: "age",
         key_generator_binary: "age-keygen"
       ]

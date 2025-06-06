@@ -151,12 +151,12 @@ defmodule SecretMana do
 
   ## Examples
       # In runtime.exs
-      SecretMana.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
+      SecretMana.generate_private_key_file(System.get_env("SECRET_MANA_PRIVATE_KEY"))
   """
-  def put_string_identity_file(private_key) do
+  def generate_private_key_file(private_key) do
     config = SecretMana.Config.new()
 
-    apply(config.backend, :put_string_identity_file, [private_key])
+    apply(config.backend, :generate_private_key_file, [config, private_key])
   end
 
   @doc """
