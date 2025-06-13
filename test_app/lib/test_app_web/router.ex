@@ -7,5 +7,7 @@ defmodule TestAppWeb.Router do
 
   scope "/api", TestAppWeb do
     pipe_through :api
+
+    get "/healthcheck", HealthCheckController, :show
   end
 end

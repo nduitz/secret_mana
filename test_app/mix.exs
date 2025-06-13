@@ -14,7 +14,7 @@ defmodule TestApp.MixProject do
         test_app: [
           include_executables_for: [:unix],
           applications: [runtime_tools: :permanent],
-          steps: [:assemble, &SecretMana.copy_secrets_for_release/1]
+          steps: [:assemble, &SecretMana.copy_secrets_for_release(&1, true)]
         ]
       ]
     ]
