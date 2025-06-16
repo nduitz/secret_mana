@@ -34,7 +34,8 @@ config :secret_mana,
 
 config :secret_mana, SecretMana.AgeBackend,
   version: "1.2.1" # default: "1.2.1", used to specify version installed
-  local_install: true/false # default: "true"; if false installation is always skipped and `bin_dir` is considered as binary path instead, useful to bundle binaries in deployments
+  local_install: true/false # default: "true"; if false installation is always skipped. Then you can either manually set `bin_dir` or let the backend handle the finding of the binaries (by using which/where).
+  Useful to bundle binaries in deployments
   bin_dir: "my_bin_path" # see `local_install`
   secret_base_path: "config/custom_secrets_folder" # default: "config/secrets"; path SecretMana will put files in, useful to scope for different environments
   key_file: "my.key" # default: "age.key"; used to rename key-file; stored under base_path

@@ -317,7 +317,8 @@ defmodule SecretMana.AgeBackend do
   end
 
   defp absolute_bin_dir_path(config) do
-    %__MODULE__{version: version, local_install: local_install} = config
+    %__MODULE__{version: version, local_install: local_install, target: target} =
+      config
 
     if local_install do
       name = "age-#{version}"
@@ -325,17 +326,39 @@ defmodule SecretMana.AgeBackend do
       Path.expand("_build")
       |> Path.join(name)
     else
-      !!config.bin_dir or
-        raise """
-          The `bin_dir` configuration is required when `local_install` is set to false.
-        """
+      cond do
+        config.bin_dir ->
+          Path.type(config.bin_dir) == :absolute or
+            raise """
+              The `bin_dir` configuration must be an absolute path.
+            """
 
-      Path.type(config.bin_dir) == :absolute or
-        raise """
-          The `bin_dir` configuration must be an absolute path.
-        """
+          config.bin_dir
 
-      config.bin_dir
+        true ->
+          find_age_path(target)
+      end
+    end
+  end
+
+  defp find_age_path(target) do
+    cmd_tool =
+      case target do
+        :windows_amd_64 -> "where"
+        :darwin_arm_64 -> "which"
+        :darwin_amd_64 -> "which"
+        :linux_amd_64 -> "which"
+        :linux_arm_64 -> "which"
+      end
+
+    System.cmd(cmd_tool, ["age"])
+    |> case do
+      {age_path, 0} ->
+        age_path |> Path.split() |> List.delete_at(-1) |> Path.join()
+
+      {_, 1} ->
+        raise ArgumentError,
+              "No age installation could be found. If it isn't installed in your path set `bin_dir` to point to your age installation."
     end
   end
 
