@@ -2,6 +2,12 @@
 
 # Changelog
 
+## v0.1.1 (2025-06-16)
+
+### Fixes
+
+- Updated docs
+
 ## v0.1.0 (2025-06-16)
 
 ### Features

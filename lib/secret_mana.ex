@@ -11,11 +11,13 @@ defmodule SecretMana do
   - Install backend
 
   ## Examples
+      import SecretMana
+
       # Read all secrets
-      secrets = SecretMana.read(config)
+      secrets = read!()
 
       # Read a specific nested key
-      password = SecretMana.read(config, ["database", "password"])
+      password = read!(["database", "password"])
 
       # Edit secrets in your preferred editor
       :ok = SecretMana.edit(config)
@@ -40,18 +42,19 @@ defmodule SecretMana do
   Reads and decrypts secrets from the configured secret file.
 
   ## Parameters
-    * `config` - The SecretMana configuration struct
     * `access_path` - Optional list of keys to traverse the secret structure, defaults to nil which returns the entire secret
 
   ## Returns
     * `term()` - The decrypted secrets
 
   ## Examples
+      import SecretMana
+
       # Read all secrets
-      secrets = SecretMana.read(config)
+      secrets = read!()
 
       # Read a specific nested key
-      password = SecretMana.read(config, ["database", "password"])
+      password = read!(["database", "password"])
   """
   defmacro read!(access_path \\ nil) do
     quote do
