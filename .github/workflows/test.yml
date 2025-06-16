@@ -1,0 +1,82 @@
+# @format
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        otp: ["27.1.2"]
+        elixir: ["1.18.1"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        # mac is not yet supported by setup-beam
+        # os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-13 ]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - name: Check formatting
+        run: mix format --check-formatted
+        # skip on windows because different line endings (LF vs CRLF)
+        if: matrix.os != 'windows-latest'
+      - run: mix test
+
+  test-test_app:
+    strategy:
+      matrix:
+        otp: ["27.1.2"]
+        elixir: ["1.18.1"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        # mac is not yet supported by setup-beam
+        # os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-13 ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - run: mix deps.get
+        working-directory: ./test_app
+
+      - run: mix compile --warnings-as-errors
+        working-directory: ./test_app
+
+      - run: mix test
+        working-directory: ./test_app
+
+      - name: Install age
+        uses: ConorMacBride/install-package@v1
+        with:
+          apt: age
+          choco: age.portable
+
+      - name: Generate secrets
+        run: mix secret_mana.gen.key && mix secret_mana.encrypt secrets.json
+        env:
+          MIX_ENV: prod
+        working-directory: ./test_app
+
+      - run: mix release
+        env:
+          MIX_ENV: prod
+        working-directory: ./test_app
+
+      - name: Smoke Test app
+        # skip this on windows, cant figure out to start and curl the server, it simply never responds
+        if: matrix.os != 'windows-latest'
+        run: |
+          _build/prod/rel/test_app/bin/test_app start &
+          curl --connect-timeout 5 --max-time 10 --retry 5 --retry-max-time 40 --retry-connrefused --fail --silent --show-error http://127.0.0.1:4000/api/healthcheck && exit 0
+        env:
+          PHX_SERVER: true
+
+        working-directory: ./test_app

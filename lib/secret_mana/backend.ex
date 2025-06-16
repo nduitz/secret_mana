@@ -7,14 +7,15 @@ defmodule SecretMana.Backend do
   @type file_path :: String.t()
   @type key_path :: list(String.t())
 
-  @callback config(config()) :: config()
+  @callback config(config()) :: term()
   @callback install(config()) :: :ok
   @callback encrypt(config(), file_path(), check_file_type :: boolean()) :: :ok
   @callback decrypt(config(), String.t()) :: :ok
   @callback gen_key(config()) :: :ok
   @callback edit(config()) :: :ok
-  @callback read(config(), key_path()) :: term()
+  @callback read!(config(), key_path()) :: String.t()
   @callback download_url(config()) :: String.t()
+  @callback generate_private_key_file(config(), binary()) :: :ok
 
   @optional_callbacks [
     download_url: 1
