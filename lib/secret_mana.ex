@@ -170,7 +170,7 @@ defmodule SecretMana do
   ## Security Note:
 
   For enhanced security, set `embed_private_key?` to `false` and use the runtime configuration
-  approach with `SecretMana.AgeBackend.put_private_key/1` in runtime.exs instead of
+  approach with `SecretMana.generate_private_key_file/1` in runtime.exs instead of
   embedding the private key in the release artifact.
 
   ## Usage in mix.exs:
@@ -204,10 +204,10 @@ defmodule SecretMana do
   ## Runtime Configuration (when embed_private_key? is false):
 
       # runtime.exs - Option 1: Using SecretMana module
-      SecretMana.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
+      SecretMana.generate_private_key_file(System.get_env("SECRET_MANA_PRIVATE_KEY"))
 
       # runtime.exs - Option 2: Using AgeBackend directly
-      SecretMana.AgeBackend.put_private_key(System.get_env("SECRET_MANA_PRIVATE_KEY"))
+      SecretMana.generate_private_key_file(System.get_env("SECRET_MANA_PRIVATE_KEY"))
 
   ## Directory Structure:
 
