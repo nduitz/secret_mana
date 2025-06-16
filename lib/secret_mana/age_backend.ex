@@ -17,7 +17,6 @@ defmodule SecretMana.AgeBackend do
     key_generator_binary: "age-keygen"
   ]
   @private_config_keys [
-    use_otp_path: false,
     absolute_bin_dir_path: nil,
     absolute_age_bin_path: nil,
     absolute_absolute_age_keygen_bin_path: nil,
