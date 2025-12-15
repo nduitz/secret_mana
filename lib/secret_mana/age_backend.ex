@@ -159,9 +159,16 @@ defmodule SecretMana.AgeBackend do
 
     decrypt(config, tmp_file)
 
+    bin_current = File.read!(tmp_file)
+
     SecretMana.Util.open_editor_with_tmp_file(editor, tmp_file)
 
-    encrypt(config, tmp_file, false)
+    bin_now = File.read!(tmp_file)
+
+    # only reencrypt file if content has changed
+    if bin_current != bin_now do
+      encrypt(config, tmp_file, false)
+    end
 
     File.rm!(tmp_file)
 
