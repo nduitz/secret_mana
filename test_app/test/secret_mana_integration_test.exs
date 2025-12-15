@@ -123,12 +123,9 @@ defmodule TestApp.SecretManaIntegrationTest do
 
   # Helper functions
   defp setup_secrets_for_env(env) do
-    original_env = Mix.env()
-    Mix.env(env)
-
     # Use the SecretMana API directly instead of Mix tasks
     %{backend_config: %{secret_base_path: secret_base_path}} =
-      config = SecretMana.Config.new()
+      config = SecretMana.Config.new(env)
 
     # Install age binary
     SecretMana.install(config)
@@ -145,9 +142,6 @@ defmodule TestApp.SecretManaIntegrationTest do
 
     # Clean up temporary file
     File.rm!(secrets_file)
-
-    # Restore original environment
-    Mix.env(original_env)
   end
 
   defp cleanup_secrets do

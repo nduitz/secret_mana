@@ -1,15 +1,15 @@
 defmodule SecretMana.Config do
   @public_config_keys [
     backend: SecretMana.AgeBackend,
-    otp_app: nil,
-    environment: nil
+    otp_app: nil
   ]
   @private_config_keys [
-    backend_config: nil
+    backend_config: nil,
+    env: nil
   ]
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
-  def new() do
+  def new(env \\ "dev") do
     all_config = Application.get_all_env(:secret_mana)
     config_keys = Keyword.keys(@public_config_keys)
 
@@ -28,7 +28,9 @@ defmodule SecretMana.Config do
     end
 
     # Merge defaults with provided config
-    final_config = Keyword.merge(@public_config_keys, valid_config)
+    final_config =
+      Keyword.merge(@public_config_keys, valid_config)
+      |> Keyword.put(:env, env)
 
     struct(__MODULE__, final_config)
     |> put_backend_config

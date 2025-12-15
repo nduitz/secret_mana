@@ -415,7 +415,7 @@ defmodule SecretMana.AgeBackend do
       Application.app_dir(otp_app, "config/secrets")
     else
       # In development mode, use project root + secrets/<env>
-      env = Mix.env()
+      env = base_config.env
       base_path = Path.expand(config.secret_base_path)
       Path.join(base_path, to_string(env))
     end
