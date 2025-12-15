@@ -8,7 +8,7 @@ jobs:
       matrix:
         otp: ["27.1.2"]
         elixir: ["1.18.1"]
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-2022]
         # mac is not yet supported by setup-beam
         # os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-13 ]
 
@@ -24,7 +24,7 @@ jobs:
       - name: Check formatting
         run: mix format --check-formatted
         # skip on windows because different line endings (LF vs CRLF)
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2022'
       - run: mix test
 
   test-test_app:
@@ -32,7 +32,7 @@ jobs:
       matrix:
         otp: ["27.1.2"]
         elixir: ["1.18.1"]
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-2022]
         # mac is not yet supported by setup-beam
         # os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-13 ]
 
@@ -72,7 +72,7 @@ jobs:
 
       - name: Smoke Test app
         # skip this on windows, cant figure out to start and curl the server, it simply never responds
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2022'
         run: |
           _build/prod/rel/test_app/bin/test_app start &
           curl --connect-timeout 5 --max-time 10 --retry 5 --retry-max-time 40 --retry-connrefused --fail --silent --show-error http://127.0.0.1:4000/api/healthcheck && exit 0
