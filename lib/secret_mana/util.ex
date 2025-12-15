@@ -1,14 +1,14 @@
 defmodule SecretMana.Util do
   require Logger
 
-  def open_editor_with_temp_file(nil, temp_file) do
-    System.cmd("vim", [temp_file], use_stdio: false)
+  def open_editor_with_tmp_file(nil, tmp_file) do
+    System.cmd("vim", [tmp_file], use_stdio: false)
   end
 
-  def open_editor_with_temp_file(editor_command, temp_file) do
+  def open_editor_with_tmp_file(editor_command, tmp_file) do
     [editor_bin | editor_args] = String.split(editor_command, " ")
 
-    System.cmd(editor_bin, editor_args ++ [temp_file])
+    System.cmd(editor_bin, editor_args ++ [tmp_file])
   end
 
   def check_file_type(file, file_type) do

@@ -155,15 +155,15 @@ defmodule SecretMana.AgeBackend do
   def edit(config) do
     editor = System.get_env("EDITOR")
 
-    {:ok, temp_file} = Briefly.create()
+    {:ok, tmp_file} = Briefly.create()
 
-    decrypt(config, temp_file)
+    decrypt(config, tmp_file)
 
-    SecretMana.Util.open_editor_with_temp_file(editor, temp_file)
+    SecretMana.Util.open_editor_with_tmp_file(editor, tmp_file)
 
-    encrypt(config, temp_file, false)
+    encrypt(config, tmp_file, false)
 
-    File.rm!(temp_file)
+    File.rm!(tmp_file)
 
     :ok
   end
@@ -259,33 +259,33 @@ defmodule SecretMana.AgeBackend do
       target: target
     } = config.backend_config
 
-    {:ok, temp_dir} = Briefly.create(type: :directory)
+    {:ok, tmp_dir} = Briefly.create(type: :directory)
 
     {binary, keygen_binary} =
       case target do
         :windows_amd_64 ->
-          cwd = String.to_charlist(temp_dir)
+          cwd = String.to_charlist(tmp_dir)
           {:ok, _} = :zip.extract(body, cwd: cwd)
 
           {"age.exe", "age-keygen.exe"}
 
         _ ->
-          :ok = :erl_tar.extract({:binary, body}, [:compressed, cwd: temp_dir])
+          :ok = :erl_tar.extract({:binary, body}, [:compressed, cwd: tmp_dir])
 
           {"age", "age-keygen"}
       end
 
-    File.cp!(Path.join([temp_dir, "age", binary]), absolute_age_bin_path)
+    File.cp!(Path.join([tmp_dir, "age", binary]), absolute_age_bin_path)
 
     File.cp!(
-      Path.join([temp_dir, "age", keygen_binary]),
+      Path.join([tmp_dir, "age", keygen_binary]),
       absolute_absolute_age_keygen_bin_path
     )
 
     File.chmod!(absolute_age_bin_path, 0o755)
     File.chmod!(absolute_absolute_age_keygen_bin_path, 0o755)
 
-    File.rm_rf!(temp_dir)
+    File.rm_rf!(tmp_dir)
   end
 
   defp default_base_url do

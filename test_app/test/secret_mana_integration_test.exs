@@ -12,7 +12,7 @@ defmodule TestApp.SecretManaIntegrationTest do
     "api_key" => "test-api-key"
   }
 
-  @test_temp_dir "tmp/"
+  @test_tmp_dir "tmp/"
 
   setup_all do
     Mix.Task.run("secret_mana.install")
@@ -43,18 +43,18 @@ defmodule TestApp.SecretManaIntegrationTest do
     end
 
     test "can generate and encrypt secrets in development mode" do
-      File.mkdir_p!(@test_temp_dir)
-      temp_file = Path.join(@test_temp_dir, "test.json")
+      File.mkdir_p!(@test_tmp_dir)
+      tmp_file = Path.join(@test_tmp_dir, "test.json")
 
       # Write a test file
-      File.write!(temp_file, Jason.encode!(@test_secret))
+      File.write!(tmp_file, Jason.encode!(@test_secret))
 
       # Should be able to encrypt it
       config = SecretMana.Config.new()
-      assert :ok = SecretMana.encrypt(config, temp_file)
+      assert :ok = SecretMana.encrypt(config, tmp_file)
 
       # Clean up
-      File.rm!(temp_file)
+      File.rm!(tmp_file)
     end
 
     test "copy_secrets_for_release/1 copies secrets to release config/secrets structure" do

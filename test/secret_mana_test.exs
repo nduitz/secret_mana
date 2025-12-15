@@ -197,7 +197,7 @@ defmodule SecretManaTest do
     {:ok, tmp_dir} = Briefly.create(type: :directory)
 
     on_exit(fn ->
-      # Cleanup temp directory after tests
+      # Cleanup tmp directory after tests
       File.rm_rf!(tmp_dir)
     end)
 
