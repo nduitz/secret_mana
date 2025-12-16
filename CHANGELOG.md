@@ -2,6 +2,19 @@
 
 # Changelog
 
+## v0.2.0 (2025-12-16)
+
+### Breaking changes
+
+- All mix tasks (except install) now require the use of the <env> argument.
+  This allows us to manage secrets without compiling all env's like setting `MIX_ENV` did.
+  
+  Everything else still relies on `Mix.env()` while in a mix environment.
+
+### Improvements
+
+- Editing and saving secrets without any changes now does not re-encrypt the secret anymore. So no diff in your secrets file if you did not change anything.
+
 ## v0.1.1 (2025-06-16)
 
 ### Fixes
