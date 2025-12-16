@@ -60,9 +60,7 @@ jobs:
           choco: age.portable
 
       - name: Generate secrets
-        run: mix secret_mana.gen.key && mix secret_mana.encrypt secrets.json
-        env:
-          MIX_ENV: prod
+        run: mix secret_mana.gen.key prod && mix secret_mana.encrypt prod secrets.json
         working-directory: ./test_app
 
       - run: mix release
