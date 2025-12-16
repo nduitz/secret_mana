@@ -125,7 +125,8 @@ defmodule TestApp.SecretManaIntegrationTest do
   defp setup_secrets_for_env(env) do
     # Use the SecretMana API directly instead of Mix tasks
     %{backend_config: %{secret_base_path: secret_base_path}} =
-      config = SecretMana.Config.new(env)
+      config =
+      SecretMana.Config.new(env)
 
     # Install age binary
     SecretMana.install(config)

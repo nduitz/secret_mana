@@ -9,7 +9,7 @@ defmodule SecretMana.Config do
   ]
   defstruct Keyword.merge(@public_config_keys, @private_config_keys)
 
-  def new(env \\ "dev") do
+  def new(env \\ nil) do
     all_config = Application.get_all_env(:secret_mana)
     config_keys = Keyword.keys(@public_config_keys)
 
