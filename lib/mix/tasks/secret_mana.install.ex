@@ -2,7 +2,7 @@ defmodule Mix.Tasks.SecretMana.Install do
   use Mix.Task
 
   @impl Mix.Task
-  def run(_opts) do
+  def run(_args) do
     Application.ensure_all_started(:secret_mana)
 
     SecretMana.Config.new()
