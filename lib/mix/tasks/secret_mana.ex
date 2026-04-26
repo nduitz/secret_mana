@@ -28,11 +28,11 @@ defmodule Mix.Tasks.SecretMana do
     ====================
 
     Configuration / Setup
-      mix secret_mana.install <env>
-          Installs SecretMana for the given environment.
+      mix secret_mana.install
+          Installs the age binary used by SecretMana.
 
       mix secret_mana.edit <env>
-          Opens the SecretMana configuration for editing.
+          Opens the SecretMana secrets for editing.
 
       mix secret_mana.gen.key <env>
           Generates a SecretMana key for the given environment.

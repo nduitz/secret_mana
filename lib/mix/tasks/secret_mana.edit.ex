@@ -1,10 +1,10 @@
 defmodule Mix.Tasks.SecretMana.Edit do
   use Mix.Task
 
-  @shortdoc "Edits SecretMana configuration for the given environment"
+  @shortdoc "Edits SecretMana secrets for the given environment"
 
   @moduledoc """
-  Opens the SecretMana configuration for editing for a given environment.
+  Opens the SecretMana secrets for editing for a given environment.
 
   ## Usage
 
@@ -82,7 +82,7 @@ defmodule Mix.Tasks.SecretMana.Edit do
         mix secret_mana.edit <env>
 
     Arguments:
-        <env>    The environment whose configuration to edit (e.g. dev, test, prod)
+        <env>    The environment whose secrets to edit (e.g. dev, test, prod)
 
     Examples:
         mix secret_mana.edit dev

@@ -1,6 +1,6 @@
 defmodule SecretMana do
   @moduledoc """
-  SecretMana is a module for managing encrypted secrets build to support various backends.
+  SecretMana is a module for managing encrypted secrets built to support various backends.
   Currently only age (https://github.com/FiloSottile/age) is supported.
 
   This module is a wrapper for the `SecretMana.Backend`:
@@ -184,21 +184,21 @@ defmodule SecretMana do
           # ... other config
           releases: [
             my_app: [
-              steps: [:assemble, &SecretMana.copy_secrets_for_release/1]
+              steps: [:assemble, fn release ->
+                SecretMana.copy_secrets_for_release(release, true)
+              end]
             ]
           ]
         ]
       end
 
-      # Option 2: Exclude private key from release (more secure)
+      # Option 2: Exclude private key from release (more secure, default)
       def project do
         [
           # ... other config
           releases: [
             my_app: [
-              steps: [:assemble, fn release ->
-                SecretMana.copy_secrets_for_release(release, false)
-              end]
+              steps: [:assemble, &SecretMana.copy_secrets_for_release/1]
             ]
           ]
         ]
@@ -206,10 +206,7 @@ defmodule SecretMana do
 
   ## Runtime Configuration (when embed_private_key? is false):
 
-      # runtime.exs - Option 1: Using SecretMana module
-      SecretMana.generate_private_key_file(System.get_env("SECRET_MANA_PRIVATE_KEY"))
-
-      # runtime.exs - Option 2: Using AgeBackend directly
+      # runtime.exs
       SecretMana.generate_private_key_file(System.get_env("SECRET_MANA_PRIVATE_KEY"))
 
   ## Directory Structure:

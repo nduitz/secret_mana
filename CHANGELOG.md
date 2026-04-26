@@ -2,6 +2,16 @@
 
 # Changelog
 
+## v0.2.1 (2026-04-26)
+
+### Fixes
+
+Always use `use_stdio: false` for running editors. It does not seem to effect editors like vscode, but fixes the use of vim/vi.
+
+### Improvements
+
+Fixed logic errors in documentation.
+
 ## v0.2.0 (2025-12-16)
 
 ### Breaking changes

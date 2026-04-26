@@ -18,7 +18,7 @@ This isn't currently well tested (only on mac). I will try to upgrade this as so
 ```elixir
 def deps do
   [
-    {:secret_mana, "~> 0.0.1"}
+    {:secret_mana, "~> 0.2.1"}
   ]
 end
 ```
@@ -37,7 +37,7 @@ config :secret_mana, SecretMana.AgeBackend,
   local_install: true/false # default: "true"; if false installation is always skipped. Then you can either manually set `bin_dir` or let the backend handle the finding of the binaries (by using which/where).
   Useful to bundle binaries in deployments
   bin_dir: "my_bin_path" # see `local_install`
-  secret_base_path: "config/custom_secrets_folder" # default: "config/secrets"; path SecretMana will put files in, useful to scope for different environments
+  secret_base_path: "config/custom_secrets_folder" # default: "secrets"; path SecretMana will put files in, useful to scope for different environments
   key_file: "my.key" # default: "age.key"; used to rename key-file; stored under base_path
   pub_key_file: "my.key.pub" # default: "age.pub"; used to rename pub-key-file; stored under base_path
   encrypted_file: "secret.enc" # default: "age.enc"; used to rename secret-file; stored under base_path

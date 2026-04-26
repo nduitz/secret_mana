@@ -28,7 +28,7 @@ defmodule Mix.Tasks.SecretMana.Encrypt do
   ## Examples
 
       mix secret_mana.encrypt dev config/secrets.yml
-      mix secret_mana.encrypt prod priv/secrets.txt
+      mix secret_mana.encrypt prod priv/secrets.json
 
   ## Getting help
 
@@ -99,8 +99,8 @@ defmodule Mix.Tasks.SecretMana.Encrypt do
 
     Examples:
         mix secret_mana.encrypt dev config/secrets.yml
-        mix secret_mana.encrypt test priv/credentials.txt
-        mix secret_mana.encrypt prod priv/secrets.env
+        mix secret_mana.encrypt test priv/credentials.json
+        mix secret_mana.encrypt prod priv/secrets.yaml
 
     For more information:
         mix help secret_mana.encrypt
