@@ -8,7 +8,7 @@ defmodule SecretMana.Util do
   def open_editor_with_tmp_file(editor_command, tmp_file) do
     [editor_bin | editor_args] = String.split(editor_command, " ")
 
-    System.cmd(editor_bin, editor_args ++ [tmp_file])
+    System.cmd(editor_bin, editor_args ++ [tmp_file], use_stdio: false)
   end
 
   def check_file_type(file, file_type) do
